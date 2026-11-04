@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Interactive Periodic Table</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f6f8;--fg:#14181f;--mut:#5b6573;--card:#fff;--line:#d6dbe2;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1116;--fg:#edf0f5;--mut:#98a3b3;--card:#171c24;--line:#2a313c}}
+:root[data-theme="dark"]{--bg:#0e1116;--fg:#edf0f5;--mut:#98a3b3;--card:#171c24;--line:#2a313c}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 "Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1280px;margin:0 auto;padding:18px 14px 28px}
+h1{margin:0 0 2px;font-size:clamp(24px,5vw,38px);font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.sub{margin:0 0 14px;color:var(--mut)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.bar input,.bar select{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 12px;min-width:0}
+.bar input{flex:1 1 200px}
+#lg{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+#lg button{font:inherit;font-size:13px;color:var(--fg);cursor:pointer;display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:99px;border:1px solid var(--line);background:var(--card)}
+#lg button::before{content:"";width:10px;height:10px;border-radius:50%;background:hsl(var(--h) var(--s,60%) 50%)}
+#lg button[aria-pressed="true"]{border-color:var(--fg);font-weight:600}
+#wrap{overflow-x:auto;padding-bottom:6px}
+#t{--c:clamp(46px,5.2vw,64px);display:grid;grid-template-columns:repeat(18,var(--c));grid-template-rows:repeat(7,var(--c)) 14px repeat(2,var(--c));gap:3px;width:max-content;margin:0 auto}
+.el,.ph{border-radius:6px;padding:2px 3px;display:flex;flex-direction:column;align-items:center;overflow:hidden;min-width:0}
+.el{font:inherit;color:var(--fg);cursor:pointer;border:1px solid hsl(var(--h) var(--s,60%) 50%/.55);background:hsl(var(--h) var(--s,60%) 50%/.2);transition:opacity .15s,background .15s}
+.el:hover{background:hsl(var(--h) var(--s,60%) 50%/.4)}
+.el:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--fg);outline-offset:1px}
+.el i{font-style:normal;font-size:9px;align-self:flex-start;color:var(--mut);line-height:1.2}
+.el b{font-size:clamp(16px,1.9vw,22px);font-weight:800;line-height:1.1}
+.el small{font-size:8px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--mut);line-height:1.3}
+.el.dim{opacity:.14}
+.ph{justify-content:center;font-size:9px;color:var(--mut);border:1px dashed var(--line)}
+.note{margin:14px 0 0;font-size:12px;color:var(--mut);max-width:70ch}
+#sh{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center}
+#sh[hidden]{display:none}
+.bk{position:absolute;inset:0;background:rgba(0,0,0,.5)}
+.card{position:relative;width:min(520px,100%);max-height:88vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:20px 20px 0 0;padding:18px 18px calc(16px + env(safe-area-inset-bottom,0px));animation:up .22s ease-out}
+@keyframes up{from{transform:translateY(24px);opacity:0}}
+@media (min-width:700px){#sh{align-items:center}.card{border-radius:20px}}
+@media (prefers-reduced-motion:reduce){.card{animation:none}.el{transition:none}}
+.hd{display:flex;gap:14px;align-items:center;margin-bottom:12px}
+.tile{flex:none;width:84px;height:84px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid hsl(var(--h) var(--s,60%) 50%/.6);background:hsl(var(--h) var(--s,60%) 50%/.22)}
+.tile i{font-style:normal;font-size:12px;color:var(--mut);align-self:flex-start;margin-left:8px}
+.tile b{font-size:38px;font-weight:800;line-height:1}
+.hd h2{margin:0;font-size:26px;line-height:1.1}
+.hd p{margin:2px 0 0;color:var(--mut)}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:7px 14px}
+dt{color:var(--mut)}
+dd{margin:0;text-align:right;font-weight:600}
+.nav{display:flex;gap:8px;margin-top:16px}
+.nav button{flex:1;font:inherit;font-weight:600;color:var(--fg);background:transparent;border:1px solid var(--line);border-radius:10px;padding:10px;cursor:pointer}
+.nav button:disabled{opacity:.35;cursor:default}
+</style>
+</head>
+<body>
+<main>
+<h1>Periodic table of the elements</h1>
+<p class="sub">All 118 elements. Tap one to see its details.</p>
+<div class="bar">
+<input id="q" type="search" placeholder="Search by name, symbol or number" aria-label="Search elements" autocomplete="off">
+<select id="md" aria-label="Colour by"><option value="cat">Colour by category</option><option value="st">Colour by state at room temperature</option></select>
+</div>
+<div id="lg"></div>
+<div id="wrap"><div id="t"></div></div>
+<p class="note">Masses in square brackets are the mass number of the longest-lived isotope, because these elements have no stable isotopes. Discovery years are approximate. States are at 20 °C and 1 atm; the heaviest elements are too unstable to measure.</p>
+</main>
+
+<div id="sh" hidden>
+<div class="bk" id="bk"></div>
+<div class="card" role="dialog" aria-modal="true" aria-labelledby="dn">
+<div id="bd"></div>
+<div class="nav"><button id="pv">Previous</button><button id="cl">Close</button><button id="nx">Next</button></div>
+</div>
+</div>
+
+<script>
+const S="H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr Rf Db Sg Bh Hs Mt Ds Rg Cn Nh Fl Mc Lv Ts Og".split(" ");
+const N="Hydrogen Helium Lithium Beryllium Boron Carbon Nitrogen Oxygen Fluorine Neon Sodium Magnesium Aluminium Silicon Phosphorus Sulfur Chlorine Argon Potassium Calcium Scandium Titanium Vanadium Chromium Manganese Iron Cobalt Nickel Copper Zinc Gallium Germanium Arsenic Selenium Bromine Krypton Rubidium Strontium Yttrium Zirconium Niobium Molybdenum Technetium Ruthenium Rhodium Palladium Silver Cadmium Indium Tin Antimony Tellurium Iodine Xenon Caesium Barium Lanthanum Cerium Praseodymium Neodymium Promethium Samarium Europium Gadolinium Terbium Dysprosium Holmium Erbium Thulium Ytterbium Lutetium Hafnium Tantalum Tungsten Rhenium Osmium Iridium Platinum Gold Mercury Thallium Lead Bismuth Polonium Astatine Radon Francium Radium Actinium Thorium Protactinium Uranium Neptunium Plutonium Americium Curium Berkelium Californium Einsteinium Fermium Mendelevium Nobelium Lawrencium Rutherfordium Dubnium Seaborgium Bohrium Hassium Meitnerium Darmstadtium Roentgenium Copernicium Nihonium Flerovium Moscovium Livermorium Tennessine Oganesson".split(" ");
+const M="1.008 4.0026 6.94 9.0122 10.81 12.011 14.007 15.999 18.998 20.180 22.990 24.305 26.982 28.085 30.974 32.06 35.45 39.948 39.098 40.078 44.956 47.867 50.942 51.996 54.938 55.845 58.933 58.693 63.546 65.38 69.723 72.630 74.922 78.971 79.904 83.798 85.468 87.62 88.906 91.224 92.906 95.95 98 101.07 102.91 106.42 107.87 112.41 114.82 118.71 121.76 127.60 126.90 131.29 132.91 137.33 138.91 140.12 140.91 144.24 145 150.36 151.96 157.25 158.93 162.50 164.93 167.26 168.93 173.05 174.97 178.49 180.95 183.84 186.21 190.23 192.22 195.08 196.97 200.59 204.38 207.2 208.98 209 210 222 223 226 227 232.04 231.04 238.03 237 244 243 247 247 251 252 257 258 259 266 267 268 269 270 277 278 281 282 285 286 289 290 293 294 294".split(" ");
+const Y="1766 1895 1817 1798 1808 0 1772 1774 1886 1898 1807 1755 1825 1824 1669 0 1774 1894 1807 1808 1879 1791 1801 1797 1774 0 1735 1751 0 1746 1875 1886 1250 1817 1826 1898 1861 1790 1794 1789 1801 1781 1937 1844 1803 1803 0 1817 1863 0 0 1782 1811 1898 1860 1808 1839 1803 1885 1885 1945 1879 1901 1880 1843 1886 1878 1843 1879 1878 1907 1923 1802 1783 1925 1803 1803 1735 0 0 1861 0 1753 1898 1940 1900 1939 1898 1899 1829 1913 1789 1940 1940 1944 1944 1949 1950 1952 1952 1955 1958 1961 1964 1968 1974 1981 1984 1982 1994 1994 1996 2004 1999 2003 2000 2010 2002".split(" ").map(Number);
+const set=s=>s.split(" ").map(Number);
+const C={noble:set("2 10 18 36 54 86 118"),halogen:set("9 17 35 53 85 117"),alkali:set("3 11 19 37 55 87"),alkaline:set("4 12 20 38 56 88"),metalloid:set("5 14 32 33 51 52"),nonmetal:set("1 6 7 8 15 16 34"),post:set("13 31 49 50 81 82 83 84 113 114 115 116")};
+const CAT={alkali:["Alkali metal",5],alkaline:["Alkaline earth metal",35],transition:["Transition metal",220],post:["Post-transition metal",185],metalloid:["Metalloid",255],nonmetal:["Other nonmetal",115],halogen:["Halogen",150],noble:["Noble gas",60],lanth:["Lanthanide",290],actin:["Actinide",330]};
+const ST={Solid:["Solid",225,60],Liquid:["Liquid",25,70],Gas:["Gas",150,60],Unknown:["Unknown",0,0]};
+const cat=z=>z>56&&z<72?"lanth":z>88&&z<104?"actin":Object.keys(C).find(k=>C[k].includes(z))||"transition";
+const state=z=>[1,2,7,8,9,10,17,18,36,54,86].includes(z)?"Gas":z==35||z==80?"Liquid":z>=104?"Unknown":"Solid";
+function pos(z){
+ if(z==1)return[1,1];if(z==2)return[1,18];
+ if(z<19){const g=z-(z<11?2:10);return[z<11?2:3,g<3?g:g+10]}
+ if(z<37)return[4,z-18];if(z<55)return[5,z-36];
+ if(z>56&&z<72)return[9,z-54];
+ if(z>88&&z<104)return[10,z-86];
+ if(z<87)return[6,z<57?z-54:z-68];
+ return[7,z<89?z-86:z-100];
+}
+const O=["1s","2s","2p","3s","3p","4s","3d","4p","5s","4d","5p","6s","4f","5d","6p","7s","5f","6d","7p"];
+const X={24:"4s1 3d5",29:"4s1 3d10",41:"5s1 4d4",42:"5s1 4d5",44:"5s1 4d7",45:"5s1 4d8",46:"5s0 4d10",47:"5s1 4d10",57:"4f0 5d1",58:"4f1 5d1",64:"4f7 5d1",78:"6s1 5d9",79:"6s1 5d10",89:"5f0 6d1",90:"5f0 6d2",91:"5f2 6d1",92:"5f3 6d1",93:"5f4 6d1",96:"5f7 6d1",103:"5f14 6d0 7p1"};
+function cfg(z){
+ let n=z;const c={};
+ O.forEach(o=>{const cap={s:2,p:6,d:10,f:14}[o[1]];c[o]=Math.max(0,Math.min(cap,n));n-=c[o]});
+ if(X[z])X[z].split(" ").forEach(t=>{const m=t.match(/^(\d[spdf])(\d+)$/);c[m[1]]=+m[2]});
+ let cut=0,core="";
+ for(const[k,[i,s]]of Object.entries({2:[1,"He"],10:[3,"Ne"],18:[5,"Ar"],36:[8,"Kr"],54:[11,"Xe"],86:[15,"Rn"]}))if(z>k){cut=i;core="["+s+"] "}
+ const val=O.slice(cut).filter(o=>c[o]>0).sort((a,b)=>a[0]-b[0]||"spdf".indexOf(a[1])-"spdf".indexOf(b[1])).map(o=>o+"<sup>"+c[o]+"</sup>").join(" ");
+ const sh=[1,2,3,4,5,6,7].map(n=>O.filter(o=>o[0]==n).reduce((a,o)=>a+c[o],0)).filter(Boolean).join(", ");
+ return{html:core+val,sh};
+}
+const E=S.map((s,i)=>{const z=i+1,[r,c]=pos(z);return{z,s,n:N[i],m:M[i],y:Y[i],cat:cat(z),st:state(z),r,c}});
+const $=id=>document.getElementById(id);
+let mode="cat",flt=null,q="",cur=1;
+const hs=e=>mode=="cat"?[CAT[e.cat][1],60]:[ST[e.st][1],ST[e.st][2]];
+const T=$("t");
+E.forEach(e=>{
+ const b=document.createElement("button");
+ b.className="el";b.style.gridRow=e.r;b.style.gridColumn=e.c;
+ b.innerHTML="<i>"+e.z+"</i><b>"+e.s+"</b><small>"+e.n+"</small>";
+ b.setAttribute("aria-label",e.n+", atomic number "+e.z);
+ b.onclick=()=>show(e.z);e.el=b;T.append(b);
+});
+[[6,"57–71"],[7,"89–103"]].forEach(([r,t])=>{const d=document.createElement("div");d.className="ph";d.style.gridRow=r;d.style.gridColumn=3;d.textContent=t;T.append(d)});
+function paint(){
+ E.forEach(e=>{
+  const[h,s]=hs(e);e.el.style.setProperty("--h",h);e.el.style.setProperty("--s",s+"%");
+  const key=mode=="cat"?e.cat:e.st;
+  const ok=(!flt||key==flt)&&(!q||e.n.toLowerCase().includes(q)||e.s.toLowerCase()==q||String(e.z)==q);
+  e.el.classList.toggle("dim",!ok);
+ });
+}
+function legend(){
+ const L=$("lg");L.innerHTML="";
+ const items=mode=="cat"?Object.entries(CAT).map(([k,v])=>[k,v[0],v[1],60]):Object.entries(ST).map(([k,v])=>[k,v[0],v[1],v[2]]);
+ items.forEach(([k,label,h,s])=>{
+  const b=document.createElement("button");b.textContent=label;
+  b.style.setProperty("--h",h);b.style.setProperty("--s",s+"%");
+  b.setAttribute("aria-pressed",flt==k);
+  b.onclick=()=>{flt=flt==k?null:k;legend();paint()};
+  L.append(b);
+ });
+}
+$("q").oninput=ev=>{q=ev.target.value.trim().toLowerCase();paint()};
+$("md").onchange=ev=>{mode=ev.target.value;flt=null;legend();paint()};
+function show(z){
+ cur=z;const e=E[z-1],[h,s]=[CAT[e.cat][1],60],f=cfg(z);
+ const unstable=z==43||z==61||(z>=84&&![90,91,92].includes(z));
+ const blk=(z>56&&z<71)||(z>88&&z<103)?"f":e.c<3||z==2?"s":e.c<13?"d":"p";
+ const grp=e.r>8?(z==71||z==103?"3":"—"):e.c;
+ const per=e.r==9?6:e.r==10?7:e.r;
+ $("bd").innerHTML=
+  '<div class="hd"><div class="tile" style="--h:'+h+';--s:'+s+'%"><i>'+z+'</i><b>'+e.s+'</b></div><div><h2 id="dn">'+e.n+'</h2><p>'+CAT[e.cat][0]+'</p></div></div><dl>'+
+  '<dt>Atomic mass</dt><dd>'+(unstable?"["+e.m+"]":e.m)+' u</dd>'+
+  '<dt>Group</dt><dd>'+grp+'</dd>'+
+  '<dt>Period</dt><dd>'+per+'</dd>'+
+  '<dt>Block</dt><dd>'+blk+'</dd>'+
+  '<dt>State at room temperature</dt><dd>'+e.st+'</dd>'+
+  '<dt>Discovered</dt><dd>'+(e.y?e.y:"Known since antiquity")+'</dd>'+
+  '<dt>Electrons per shell</dt><dd>'+f.sh+'</dd>'+
+  '<dt>Electron configuration</dt><dd>'+f.html+'</dd></dl>';
+ $("pv").disabled=z==1;$("nx").disabled=z==118;
+ $("sh").hidden=false;$("cl").focus();
+}
+const close=()=>{$("sh").hidden=true;E[cur-1].el.focus()};
+$("cl").onclick=close;$("bk").onclick=close;
+$("pv").onclick=()=>cur>1&&show(cur-1);
+$("nx").onclick=()=>cur<118&&show(cur+1);
+document.addEventListener("keydown",ev=>{
+ if($("sh").hidden)return;
+ if(ev.key=="Escape")close();
+ if(ev.key=="ArrowLeft"&&cur>1)show(cur-1);
+ if(ev.key=="ArrowRight"&&cur<118)show(cur+1);
+});
+legend();paint();
+</script>
+</body>
+</html>
